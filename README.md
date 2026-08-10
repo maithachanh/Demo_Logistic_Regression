@@ -1,121 +1,100 @@
 # Demo Logistic Regression
 
-File này mô tả và minh họa cách hoạt động của thuật toán Logistic Regression thông qua một ví dụ đơn giản với các biến đầu vào là "Giờ học" và "Làm bài tập", còn nhãn đầu ra là "Kết quả".
+Dự án này minh họa chi tiết và trực quan hóa cách hoạt động của thuật toán **Logistic Regression** trong Machine Learning với 3 biến thể chính:
+1. **Binary Logistic Regression** (Phân loại Nhị phân: Trượt / Đậu)
+2. **Multinomial Logistic Regression / Softmax Regression** (Phân loại Đa lớp độc lập: Trượt / Đậu / Xuất sắc)
+3. **Ordinal Logistic Regression / Proportional Odds Model** (Phân loại Đa lớp có thứ tự: Trượt < Đậu < Xuất sắc)
 
-## Mục đích
+---
 
-Script [Demo_Logistic_Regression.py](Demo_Logistic_Regression.py) thực hiện một demo về ba kiểu Logistic Regression:
+## 🌟 Các Cải Tiến & Nâng Cấp Trong Phiên Bản Mới
 
-- Binary Logistic Regression
-- Multinomial Logistic Regression
-- Ordinal Logistic Regression
+1. **Cấu Trúc Hướng Đối Tượng (OOP)**:
+   - Tách biệt rõ ràng thành các lớp `BinaryLogisticRegression`, `MultinomialLogisticRegression`, `OrdinalLogisticRegression` kế thừa từ `BaseLogisticRegression`.
+   - Giúp mã nguồn sạch đẹp, đóng gói logic huấn luyện (`fit`), dự đoán (`predict`, `predict_proba`), và đánh giá (`evaluate`).
 
-Mỗi phiên bản sẽ dùng cùng một tập dữ liệu mẫu nhưng có cách mã hóa nhãn khác nhau để phù hợp với từng loại bài toán.
+2. **Khắc Phục Lỗi Đa Cộng Tuyến Trong Ordinal Logistic Regression**:
+   - Trong mô hình Cumulative Logit (Proportional Odds), các điểm ngưỡng (thresholds/cutpoints $\theta_k$) đã đóng vai trò làm hệ số chặn phân tách các lớp.
+   - Việc đưa thêm cột bias ($1$) vào ma trận $X$ dẫn tới hiện tượng đa cộng tuyến hoàn hảo giữa bias $w_0$ và $\theta_k$. Mô hình mới đã loại bỏ cột bias dư thừa khi huấn luyện Ordinal Logistic Regression để tham số hội tụ chính xác.
 
-## Flow hoạt động
+3. **Hỗ Trợ Giao Diện Dòng Lệnh (CLI Arguments)**:
+   - Thêm bộ xử lý `argparse` cho phép chạy tham số qua terminal linh hoạt mà không cần nhập thủ công.
+   - Vẫn giữ nguyên chế độ tương tác hỏi đáp (`input()`) nếu không truyền cờ tham số.
 
-### 1. Chọn kiểu mô hình
+4. **Trực Quan Hóa Đôi (Dual Subplots Visualization)**:
+   - **Subplot 1**: Trực quan hóa đường ranh giới quyết định (Decision Boundary line $w_0 + w_1 x_1 + w_2 x_2 = 0$) và vùng xác suất phân lớp.
+   - **Subplot 2**: Đồ thị theo dõi lịch sử giảm hàm mất mát (Loss Curve) qua từng Epoch giúp người học hiểu rõ sự hội tụ của thuật toán Gradient Descent.
 
-Khi chạy script, chương trình sẽ hỏi người dùng lựa chọn kiểu Logistic Regression:
+---
 
-- binary
-- multinomial
-- ordinal
+## 📐 Cơ Sở Toán Học
 
-Nếu người dùng nhập không hợp lệ, chương trình sẽ tự động chuyển về kiểu binary.
+### 1. Binary Logistic Regression
+- **Hàm kích hoạt**: Sigmoid $\sigma(z) = \frac{1}{1 + e^{-z}}$, với $z = X \cdot w$.
+- **Hàm mất mát**: Binary Cross-Entropy Loss:
+  $$L(w) = -\frac{1}{N} \sum_{i=1}^N \left[ y_i \ln(\hat{y}_i) + (1 - y_i) \ln(1 - \hat{y}_i) \right]$$
+- **Gradient**:
+  $$\nabla_w L = \frac{1}{N} X^T (\hat{y} - y)$$
 
-### 2. Tạo dữ liệu mẫu
+### 2. Multinomial Logistic Regression (Softmax)
+- **Hàm kích hoạt**: Softmax cho $K$ lớp:
+  $$P(Y_i = k) = \frac{e^{z_{i, k}}}{\sum_{j=1}^K e^{z_{i, j}}}, \quad Z = X \cdot W^T$$
+- **Hàm mất mát**: Categorical Cross-Entropy Loss:
+  $$L(W) = -\frac{1}{N} \sum_{i=1}^N \sum_{k=1}^K y_{i, k} \ln(\hat{y}_{i, k})$$
+- **Gradient**:
+  $$\nabla_W L = \frac{1}{N} (\hat{Y} - Y_{\text{onehot}})^T X$$
 
-Script xây dựng một bảng dữ liệu gồm các cột:
+### 3. Ordinal Logistic Regression (Proportional Odds)
+- **Xác suất tích lũy**:
+  $$\gamma_{i, k} = P(Y_i \le k) = \sigma(\theta_k - X_{\text{raw}, i} \cdot \beta), \quad k = 0, \dots, K-2$$
+- **Xác suất từng lớp**:
+  $$P(Y_i = 0) = \gamma_{i, 0}, \quad P(Y_i = k) = \gamma_{i, k} - \gamma_{i, k-1}, \quad P(Y_i = K-1) = 1 - \gamma_{i, K-2}$$
 
-- Sinh viên
-- Giờ học
-- Làm bài tập
-- Kết quả
+---
 
-Dữ liệu này được dùng để minh họa mối quan hệ giữa các đặc trưng đầu vào và nhãn đầu ra.
+## 🚀 Hướng Dẫn Sử Dụng
 
-### 3. Chuyển dữ liệu sang dạng số
-
-Các thuộc tính dạng chữ được chuyển thành số để mô hình có thể học được:
-
-- Giờ học: Thấp = 0, Trung bình = 1, Cao = 2
-- Làm bài tập: Không đầy đủ = 0, Đầy đủ = 1
-- Kết quả: được mã hóa thành các giá trị số tương ứng tùy theo kiểu mô hình
-
-Quá trình này được gọi là encoding.
-
-### 4. Xây dựng ma trận đặc trưng
-
-Script tạo:
-
-- Ma trận X chứa các đặc trưng đầu vào
-- Vector y chứa nhãn mục tiêu
-
-Để mô hình có thể học được hệ số chặn, chương trình thêm một cột bias vào đầu ma trận X.
-
-### 5. Khởi tạo tham số
-
-Tùy theo kiểu mô hình, chương trình sẽ khởi tạo các tham số khác nhau:
-
-- Binary: vector trọng số w
-- Multinomial: ma trận trọng số W
-- Ordinal: vector beta và các thresholds
-
-Các giá trị này được khởi tạo ngẫu nhiên với seed cố định để đảm bảo kết quả có thể lặp lại.
-
-### 6. Huấn luyện bằng Gradient Descent
-
-Script thực hiện huấn luyện qua nhiều epoch (25 epoch mặc định).
-
-Trong mỗi epoch, chương trình sẽ:
-
-- tính giá trị tuyến tính z hoặc eta
-- tính xác suất dự đoán bằng sigmoid hoặc softmax
-- tính loss
-- tính gradient
-- cập nhật trọng số
-
-Quá trình này lặp lại để tối ưu hóa mô hình.
-
-### 7. Dự đoán và đánh giá
-
-Sau khi huấn luyện, script sẽ dùng trọng số đã học để dự đoán lại trên tập dữ liệu ban đầu.
-
-Kết quả hiển thị gồm:
-
-- xác suất dự đoán
-- lớp dự đoán
-- nhãn thực tế
-- độ chính xác của mô hình trên tập dữ liệu hiện tại
-
-### 8. Vẽ biểu đồ
-
-Cuối cùng, chương trình vẽ biểu đồ để trực quan hóa:
-
-- các điểm dữ liệu ban đầu
-- vùng phân lớp dự đoán
-- đường hoặc vùng xác suất tương ứng với từng mô hình
-
-Nếu chạy ở môi trường không tương tác, biểu đồ sẽ được lưu thành file ảnh PNG; nếu chạy tương tác, biểu đồ sẽ được hiển thị trực tiếp.
-
-## Cách chạy
-
-Chạy lệnh sau:
-
+### Cách 1: Chạy Tương Tác (Interactive Mode)
+Chạy lệnh bên dưới và chọn kiểu mô hình khi được hỏi:
 ```bash
 python Demo_Logistic_Regression.py
 ```
+Nhập một trong các lựa chọn: `binary`, `multinomial`, `ordinal`, hoặc `all`.
 
-## Output
+### Cách 2: Chạy Qua Dòng Lệnh (CLI Flags)
 
-Khi chạy xong, bạn sẽ thấy:
+1. **Chạy Binary Logistic Regression với 100 Epochs**:
+   ```bash
+   python Demo_Logistic_Regression.py --model binary --epochs 100 --lr 0.1
+   ```
 
-- bảng dữ liệu ban đầu và dữ liệu đã mã hóa
-- các bước huấn luyện epoch-by-epoch
-- kết quả dự đoán và độ chính xác
-- biểu đồ minh họa
+2. **Chạy tất cả mô hình cùng lúc**:
+   ```bash
+   python Demo_Logistic_Regression.py --model all --epochs 50
+   ```
 
-## Ghi chú
+3. **Chạy chế độ ản log Epochs chi tiết (`--quiet`) và không hiển thị cửa sổ plot (`--no-plot`)**:
+   ```bash
+   python Demo_Logistic_Regression.py --model ordinal --quiet --no-plot
+   ```
 
-Đây là một demo giáo dục, nên dữ liệu khá nhỏ và đơn giản. Mục tiêu chính là giúp người học hiểu được luồng làm việc của Logistic Regression, không phải để xây dựng một mô hình production hoàn chỉnh.
+### Danh sách Tham số CLI:
+- `--model`: Kiểu mô hình (`binary`, `multinomial`, `ordinal`, `all`).
+- `--epochs`: Số lượng Epoch huấn luyện (Mặc định: `50`).
+- `--lr`: Tốc độ học Learning Rate (Mặc định: `0.1`).
+- `--seed`: Seed khởi tạo ngẫu nhiên (Mặc định: `42`).
+- `--no-plot`: Không hiển thị/vẽ biểu đồ.
+- `--quiet`: Ẩn chi tiết từng Epoch trong quá trình huấn luyện.
+
+---
+
+## 📊 File Đầu Ra (Output)
+
+Khi chạy xong, chương trình sẽ xuất ra các file ảnh biểu đồ PNG tại thư mục dự án:
+- `logistic_regression_plot_binary.png`
+- `logistic_regression_plot_multinomial.png`
+- `logistic_regression_plot_ordinal.png`
+
+Mỗi file ảnh chứa 2 biểu đồ trực quan hóa:
+1. **Bên trái**: Phân vùng dự đoán & Ranh giới phân lớp (Decision Boundary).
+2. **Bên phải**: Lịch sử hàm mất mát (Loss Curve) giảm dần qua các Epochs.
